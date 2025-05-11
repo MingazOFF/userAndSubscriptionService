@@ -2,6 +2,8 @@ package ru.mingazoff.userAndSubscriptionService.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.mingazoff.userAndSubscriptionService.exception.SubscriptionNotBelongToUser;
+import ru.mingazoff.userAndSubscriptionService.exception.UserNotFoundException;
 import ru.mingazoff.userAndSubscriptionService.mapper.UserMapper;
 import ru.mingazoff.userAndSubscriptionService.mapper.UserWithSubscriptionsMapper;
 import ru.mingazoff.userAndSubscriptionService.model.dto.SubscriptionDto;
@@ -21,16 +23,22 @@ public class UserServiceImpl implements UserService {
     private final UserWithSubscriptionsMapper userWithSubscriptionsMapper;
     private final SubscriptionService subscriptionService;
 
+    private User getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new UserNotFoundException(String.format("Пользователь с id: %s не найден", id)));
+        return user;
+    }
+
     @Override
     public UserDto getUserDtoById(Long id) {
-        User user = userRepository.findById(id).orElse(null);
-        return userMapper.toUserDto(user);
+        UserDto userDto = userMapper.toUserDto(getUserById(id));
+        return userDto;
     }
 
     @Override
     public UserWithSubscriptionsDto getUserWithSubscriptionsDtoById(Long id) {
-        User user = userRepository.findById(id).orElse(null);
-        return userWithSubscriptionsMapper.toUserWithSubscriptionsDto(user);
+        UserWithSubscriptionsDto userDto = userWithSubscriptionsMapper.toUserWithSubscriptionsDto(getUserById(id));
+        return userDto;
     }
 
     @Override
@@ -41,10 +49,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateUser(Long id, UserDto userDto) {
-        User user = userRepository.findById(id).orElse(null);
+    public UserDto updateUser(Long id, UserDto userDto) {
+        User user = getUserById(id);
         user.setName(userDto.getName());
-        userRepository.save(user);
+        UserDto updatedUserDto = userMapper.toUserDto(userRepository.save(user));
+        return updatedUserDto;
     }
 
     @Override
@@ -54,18 +63,23 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Long addSubscriptionToUser(Long userId, SubscriptionDto subscriptionDto) {
-        User user = userRepository.findById(userId).orElse(null);
+        User user = getUserById(userId);
         Subscription subscription = subscriptionService.findOrCreateSubscription(subscriptionDto);
-        user.getSubscriptions().add(subscription);
-        userRepository.save(user);
+        boolean added = user.getSubscriptions().add(subscription);
+        if (added) {
+            userRepository.save(user);
+        }
         return subscription.getId();
     }
 
     @Override
     public void deleteSubscriptionFromUserById(Long id, Long subId) {
-        User user = userRepository.findById(id).orElse(null);
+        User user = getUserById(id);
         Subscription subscription = subscriptionService.getSubscriptionById(subId);
-        user.getSubscriptions().remove(subscription);
+        boolean removed = user.getSubscriptions().remove(subscription);
+        if (!removed) {
+            throw new SubscriptionNotBelongToUser(String.format("У пользователя с id: %s не найдена подписка с id: %s", id, subId));
+        }
         userRepository.save(user);
     }
 }
