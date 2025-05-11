@@ -1,6 +1,7 @@
 package ru.mingazoff.userAndSubscriptionService.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.mingazoff.userAndSubscriptionService.exception.SubscriptionNotBelongToUser;
 import ru.mingazoff.userAndSubscriptionService.exception.UserNotFoundException;
@@ -15,6 +16,7 @@ import ru.mingazoff.userAndSubscriptionService.repository.UserRepository;
 import ru.mingazoff.userAndSubscriptionService.service.SubscriptionService;
 import ru.mingazoff.userAndSubscriptionService.service.UserService;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -26,18 +28,21 @@ public class UserServiceImpl implements UserService {
     private User getUserById(Long id) {
         User user = userRepository.findById(id).orElseThrow(
                 () -> new UserNotFoundException(String.format("Пользователь с id: %s не найден", id)));
+        log.info("Выполнено извлечение из БД по id: {} пользователя: {}", id, user);
         return user;
     }
 
     @Override
     public UserDto getUserDtoById(Long id) {
         UserDto userDto = userMapper.toUserDto(getUserById(id));
+        log.debug("Выполнен маппинг в DTO: {}", userDto);
         return userDto;
     }
 
     @Override
     public UserWithSubscriptionsDto getUserWithSubscriptionsDtoById(Long id) {
         UserWithSubscriptionsDto userDto = userWithSubscriptionsMapper.toUserWithSubscriptionsDto(getUserById(id));
+        log.debug("Выполнен  маппинг в DTO: {}", userDto);
         return userDto;
     }
 
@@ -45,6 +50,7 @@ public class UserServiceImpl implements UserService {
     public Long createUser(UserDto userDto) {
         User user = userMapper.toUser(userDto);
         User savedUser = userRepository.save(user);
+        log.info("Выполнено сохранение в БД пользователя: {}", savedUser);
         return savedUser.getId();
     }
 
@@ -52,13 +58,17 @@ public class UserServiceImpl implements UserService {
     public UserDto updateUser(Long id, UserDto userDto) {
         User user = getUserById(id);
         user.setName(userDto.getName());
-        UserDto updatedUserDto = userMapper.toUserDto(userRepository.save(user));
+        User updatedUser = userRepository.save(user);
+        log.info("Выполнено обновление в БД пользователя: {}", updatedUser);
+        UserDto updatedUserDto = userMapper.toUserDto(updatedUser);
+        log.debug("Выполнен маппинг  в DTO: {}", updatedUserDto);
         return updatedUserDto;
     }
 
     @Override
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
+        log.info("Выполнено удаление из БД пользователя с id: {}", id);
     }
 
     @Override
@@ -68,6 +78,9 @@ public class UserServiceImpl implements UserService {
         boolean added = user.getSubscriptions().add(subscription);
         if (added) {
             userRepository.save(user);
+            log.info("Выполнено добавление в БД к пользователю: {} подписки: {}", user, subscription);
+        } else {
+            log.debug("У пользователя: {} уже имеется подписка: {}", user, subscription);
         }
         return subscription.getId();
     }
@@ -81,5 +94,6 @@ public class UserServiceImpl implements UserService {
             throw new SubscriptionNotBelongToUser(String.format("У пользователя с id: %s не найдена подписка с id: %s", id, subId));
         }
         userRepository.save(user);
+        log.info("Выполнено удаление в БД у пользователя: {} подписки: {}", user, subscription);
     }
 }

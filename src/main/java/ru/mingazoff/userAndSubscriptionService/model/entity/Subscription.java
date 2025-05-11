@@ -12,6 +12,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.Set;
 
@@ -22,6 +23,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString
 public class Subscription {
 
     @Id
@@ -33,6 +35,7 @@ public class Subscription {
     @EqualsAndHashCode.Include
     private String name;
 
+    @ToString.Exclude
     @ManyToMany(mappedBy = "subscriptions")
     private Set<User> users;
 }

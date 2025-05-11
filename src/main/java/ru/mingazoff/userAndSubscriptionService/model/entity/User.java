@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class User {
 
     @Id
@@ -38,6 +40,7 @@ public class User {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @ToString.Exclude
     @ManyToMany
     @JoinTable(
             name = "user_subscriptions",
