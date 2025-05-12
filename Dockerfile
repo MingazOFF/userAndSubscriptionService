@@ -3,7 +3,7 @@ COPY pom.xml /build/
 WORKDIR /build/
 RUN mvn dependency:go-offline
 COPY src /build/src
-RUN mvn package -DskipTests=true
+RUN mvn package
 
 FROM openjdk:17-jdk-alpine
 ARG JAR_FILE=/build/target/*.jar
